@@ -22,3 +22,10 @@ class Choice(models.Model):
 
     def __str__(self):
         return self.choice_text
+
+
+class Metadata(models.Model):
+    question = models.OneToOneField(
+        Question,
+        on_delete=models.CASCADE,
+    )
