@@ -1,6 +1,9 @@
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
+from .serializers import QuestionSerializer
 from .models import Question
 
 
@@ -24,3 +27,10 @@ def results(request, question_id):
 
 def vote(request, question_id):
     return HttpResponse("You're voting on question %s." % question_id)
+
+
+class QuestionView(APIView):
+    def get(self, request, format=None):
+        questions = Question.objects.all()
+        serializer = QuestionSerializer(questions, many=True)
+        return Response(serializer.data)
