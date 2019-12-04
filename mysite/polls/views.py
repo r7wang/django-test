@@ -1,9 +1,13 @@
+import json
+
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
+from rest_framework import status
+from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .serializers import QuestionSerializer
+from .serializers import QuestionSerializer, ChoiceSerializer
 from .models import Question
 
 
@@ -30,7 +34,24 @@ def vote(request, question_id):
 
 
 class QuestionView(APIView):
-    def get(self, request, format=None):
+    def get(self, request):
         questions = Question.objects.all()
         serializer = QuestionSerializer(questions, many=True)
         return Response(serializer.data)
+
+
+class ChoiceView(APIView):
+    def get(self, request):
+        json_str = '{' \
+               '"question_id": 1,' \
+               '"choice_text": "Another choice...",' \
+               '"publish_date": "2019-10-25T08:30"' \
+               '}'
+        data = json.loads(json_str)
+        serializer = ChoiceSerializer(data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        valid_data = serializer.validated_data
+        return Response(valid_data)
+
+    def post(self, request):
+        return Response(status=status.HTTP_200_OK)
