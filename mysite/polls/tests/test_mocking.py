@@ -15,9 +15,9 @@ def math_module_mock(mocker):
     def _math_module_mock(is_global: bool):
         module = MagicMock()
         if is_global:
-            mocker.patch('rw.polls.helpers.math', module)
+            mocker.patch('config.polls.helpers.math', module)
         else:
-            mocker.patch('rw.polls.services.mocking.math', module)
+            mocker.patch('config.polls.services.mocking.math', module)
         return module
     return _math_module_mock
 
@@ -27,9 +27,9 @@ def math_func_mock(mocker):
     def _math_func_mock(is_global: bool, val: int):
         func = MagicMock(return_value=val)
         if is_global:
-            mocker.patch('rw.polls.helpers.math.add', func)
+            mocker.patch('config.polls.helpers.math.add', func)
         else:
-            mocker.patch('rw.polls.services.mocking.add', func)
+            mocker.patch('config.polls.services.mocking.add', func)
         return func
     return _math_func_mock
 
@@ -40,9 +40,9 @@ def math_class_mock(mocker):
         func = MagicMock(return_value=val)
         mocker.patch.object(cls, 'add', func)
         if is_global:
-            mocker.patch('rw.polls.helpers.math.MathService', MagicMock(return_value=cls))
+            mocker.patch('config.polls.helpers.math.MathService', MagicMock(return_value=cls))
         else:
-            mocker.patch('rw.polls.services.mocking.MathService', MagicMock(return_value=cls))
+            mocker.patch('config.polls.services.mocking.MathService', MagicMock(return_value=cls))
         return cls
     return _math_class_mock
 
