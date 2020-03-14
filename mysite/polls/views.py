@@ -1,16 +1,19 @@
 import json
 from datetime import datetime
+from typing import Optional
 
 from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
+from django.utils.timezone import utc
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .exceptions import GenericException
-from .serializers import QuestionSerializer, ChoiceSerializer
-from .models import Question
+from mysite.polls.exceptions import GenericException
+from mysite.polls.serializers import QuestionSerializer, ChoiceSerializer
+from mysite.polls.models import Question, Choice
+from mysite.polls.services.choices_repo import ChoicesRepo
 
 
 def index(request):
@@ -33,6 +36,28 @@ def results(request, question_id):
 
 def vote(request, question_id):
     return HttpResponse("You're voting on question %s." % question_id)
+
+
+def delete_choices():
+    Choice.objects.all().delete()
+
+
+def delete_questions():
+    Question.objects.all().delete()
+
+
+def make_choice(question: Question, text: str) -> Choice:
+    choice = Choice(question=question, choice_text=text, publish_date=datetime.now(tz=utc))
+    choice.save()
+    return choice
+
+
+def make_question(text: str, exc: Optional[Exception] = None) -> Question:
+    question = Question(question_text=text, publish_date=datetime.now(tz=utc))
+    if exc:
+        raise exc
+    question.save()
+    return question
 
 
 class QuestionView(APIView):
@@ -59,19 +84,34 @@ class ChoiceView(APIView):
         return Response(status=status.HTTP_200_OK)
 
 
-class NoSavePoint(APIView):
+class RelatedView(APIView):
+    _choices_repo = ChoicesRepo()
+
+    def get(self, request):
+        delete_choices()
+        delete_questions()
+
+        question = make_question('Question A')
+        make_choice(question, 'Choice A')
+        make_choice(question, 'Choice B')
+
+        choices = self._choices_repo.get_question_choices(question)
+
+        data = {}
+        for choice in choices:
+            data[choice.id] = choice.choice_text
+        return Response(data=data)
+
+
+class NoTransaction(APIView):
     def get(self, request, *args, **kwargs):
         # Writes objects to the database but throws an exception before the entire operation completes; does not use
         # any save points.
-        Question.objects.all().delete()
+        delete_questions()
 
         try:
-            question_a = Question(question_text='Question A', publish_date=datetime.now())
-            question_a.save()
-
-            question_b = Question(question_text='Question B', publish_date=datetime.now())
-            raise GenericException()
-            question_b.save()
+            make_question('Question A')
+            make_question('Question B', GenericException())
         except GenericException:
             pass
 
@@ -79,22 +119,70 @@ class NoSavePoint(APIView):
         questions = Question.objects.all()
         for question in questions:
             data[question.id] = question.question_text
-
         return Response(data=data)
 
 
-class WithSavePoint(APIView):
+class WithTransaction(APIView):
+    def get(self, request, *args, **kwargs):
+        delete_questions()
+
+        try:
+            with transaction.atomic():
+                make_question('Question A')
+                make_question('Question B', GenericException())
+        except GenericException:
+            pass
+
+        data = {}
+        questions = Question.objects.all()
+        for question in questions:
+            data[question.id] = question.question_text
+        return Response(data=data)
+
+
+class NestedTransaction(APIView):
+    def get(self, request, *args, **kwargs):
+        delete_questions()
+
+        try:
+            with transaction.atomic():
+                make_question('Question A')
+
+                # Higher-level API used to partially rollback a transaction.
+                try:
+                    with transaction.atomic():
+                        make_question('Question B')
+                        make_question('Question C', GenericException())
+                except GenericException:
+                    pass
+        except GenericException:
+            pass
+
+        data = {}
+        questions = Question.objects.all()
+        for question in questions:
+            data[question.id] = question.question_text
+        return Response(data=data)
+
+
+class NestedSavePoint(APIView):
     def get(self, request, *args, **kwargs):
         Question.objects.all().delete()
 
         try:
             with transaction.atomic():
-                question_a = Question(question_text='Question A', publish_date=datetime.now())
-                question_a.save()
+                make_question('Question A')
 
-                question_b = Question(question_text='Question B', publish_date=datetime.now())
-                raise GenericException()
-                question_b.save()
+                # Lower-level API used to partially rollback a transaction.
+                sid = transaction.savepoint()
+                try:
+                    make_question('Question B')
+                    make_question('Question C', GenericException())
+                except GenericException:
+                    make_question('Question D')
+                    transaction.savepoint_rollback(sid)
+                else:
+                    transaction.savepoint_commit(sid)
         except GenericException:
             pass
 
