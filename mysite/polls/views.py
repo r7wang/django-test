@@ -1,12 +1,14 @@
 import json
+from datetime import datetime
 
+from django.db import transaction
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404
 from rest_framework import status
-from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from .exceptions import GenericException
 from .serializers import QuestionSerializer, ChoiceSerializer
 from .models import Question
 
@@ -55,3 +57,50 @@ class ChoiceView(APIView):
 
     def post(self, request):
         return Response(status=status.HTTP_200_OK)
+
+
+class NoSavePoint(APIView):
+    def get(self, request, *args, **kwargs):
+        # Writes objects to the database but throws an exception before the entire operation completes; does not use
+        # any save points.
+        Question.objects.all().delete()
+
+        try:
+            question_a = Question(question_text='Question A', publish_date=datetime.now())
+            question_a.save()
+
+            question_b = Question(question_text='Question B', publish_date=datetime.now())
+            raise GenericException()
+            question_b.save()
+        except GenericException:
+            pass
+
+        data = {}
+        questions = Question.objects.all()
+        for question in questions:
+            data[question.id] = question.question_text
+
+        return Response(data=data)
+
+
+class WithSavePoint(APIView):
+    def get(self, request, *args, **kwargs):
+        Question.objects.all().delete()
+
+        try:
+            with transaction.atomic():
+                question_a = Question(question_text='Question A', publish_date=datetime.now())
+                question_a.save()
+
+                question_b = Question(question_text='Question B', publish_date=datetime.now())
+                raise GenericException()
+                question_b.save()
+        except GenericException:
+            pass
+
+        data = {}
+        questions = Question.objects.all()
+        for question in questions:
+            data[question.id] = question.question_text
+
+        return Response(data=data)
