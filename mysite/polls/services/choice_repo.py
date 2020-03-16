@@ -8,7 +8,7 @@ from mysite.polls.models import Choice, Question
 
 class ChoiceRepo:
     def get_question_choices(self, question: Question) -> List[Choice]:
-        return [question.choices]
+        return [choice for choice in question.choices.all()]
 
     def delete_choices(self):
         Choice.objects.all().delete()

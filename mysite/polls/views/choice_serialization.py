@@ -11,7 +11,6 @@ class ChoiceSerialization(APIView):
         json_str = '{' \
                '"question_id": 1,' \
                '"choice_text": "Another choice...",' \
-               '"publish_date": "2019-10-25T08:30"' \
                '}'
         data = json.loads(json_str)
         serializer = ChoiceSerializer(data=data, partial=True)

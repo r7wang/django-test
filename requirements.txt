@@ -6,4 +6,6 @@ djangorestframework==3.11.0
 pytz==2019.3
 
 pytest
+pytest-django
 pytest-mock
+django_mock_queries

@@ -8,7 +8,7 @@ from mysite.polls.models import Question
 
 class QuestionRepo:
     def get_all_questions(self) -> List[Question]:
-        return Question.objects.all()
+        return [question for question in Question.objects.all()]
 
     def create_question(self, text: str, exc: Optional[Exception] = None) -> Question:
         question = Question(question_text=text, publish_date=datetime.now(tz=utc))
