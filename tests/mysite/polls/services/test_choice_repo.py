@@ -1,10 +1,8 @@
-from datetime import datetime
 from typing import List
 
 import pytest
 from django.db.models import ManyToOneRel
 from django_mock_queries.query import MockSet
-from pytz import utc
 
 from mysite.polls.models import Choice, Question
 from mysite.polls.services.choice_repo import ChoiceRepo
@@ -46,7 +44,7 @@ class TestGetQuestionChoices:
         )
 
     @pytest.mark.django_db
-    def test_(self, mocker):
+    def test_expect_related_name_when_query(self, mocker):
         questions = MockSet(model=Question)
         mocker.patch.object(Question, 'objects', questions)
 
