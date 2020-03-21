@@ -20,6 +20,7 @@ urlpatterns = [
     # Transactions.
     path('no-trans/', views.NoTransaction.as_view(), name='no-trans'),
     path('with-trans/', views.WithTransaction.as_view(), name='with-trans'),
+    path('with-save/', views.WithSavePoint.as_view(), name='with-save'),
     path('nested-trans/', views.NestedTransaction.as_view(), name='nested-trans'),
     path('nested-save/', views.NestedSavePoint.as_view(), name='nested-save'),
 ]

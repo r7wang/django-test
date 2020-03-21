@@ -7,6 +7,10 @@ from mysite.polls.services.question_repo import QuestionRepo
 
 
 class WithTransaction(APIView):
+    """
+    When you use a transaction, on failure to create Question B, we will also rollback Question A.
+    """
+
     _question_repo = QuestionRepo()
 
     def get(self, request):
