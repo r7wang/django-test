@@ -10,6 +10,10 @@ class ChoiceRepo:
     def get_question_choices(self, question: Question) -> List[Choice]:
         return [choice for choice in question.choices.all()]
 
+    def get_question_choices_starting_with(self, question: Question, starting_with: str) -> List[Choice]:
+        qs = question.choices.filter(choice_text__startswith=starting_with)
+        return [choice for choice in qs]
+
     def delete_choices(self):
         Choice.objects.all().delete()
 
