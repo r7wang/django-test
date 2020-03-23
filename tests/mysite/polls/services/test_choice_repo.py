@@ -37,6 +37,13 @@ class TestGetQuestionChoices:
             # find the related objects for each case.
             return mocker.MagicMock(return_value=result)
 
+            # We need the following arguments:
+            #   - model type (Question)
+            #   - related name ('choices')
+            #
+            # What we can do is say that if our model type and related name, then mgr_factory returns the mock.
+            # Otherwise, it just returns the factory_orig(superclass, rel).
+
         mocker.patch(
             'django.db.models.fields.related_descriptors.create_reverse_many_to_one_manager',
             mgr_factory,
